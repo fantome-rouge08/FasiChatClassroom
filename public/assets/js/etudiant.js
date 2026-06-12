@@ -14,6 +14,7 @@ window.initChat = function(userId, promoId) {
     setInterval(loadMessages, 3000);
 };
 
+//Envoi des fichiers
 window.triggerUpload = function(type) {
     const input = document.getElementById('fileInput');
     input.accept = (type === 'image') ? 'image/*' : (type === 'pdf') ? '.pdf' : (type === 'video') ? 'video/*' : '*';
