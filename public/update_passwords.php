@@ -1,5 +1,5 @@
 <?php
-// public/update_passwords.php
+
 require_once __DIR__ . '/../database/Database.php';
 
 try {

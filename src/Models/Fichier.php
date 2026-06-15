@@ -47,7 +47,7 @@ class Fichier {
 
     private function compressImage($source, $dest, $extension) {
         list($width, $height) = getimagesize($source);
-        $newWidth = 800; // Max width
+        $newWidth = 800;
         $newHeight = ($height / $width) * $newWidth;
 
         $image = ($extension === 'png') ? imagecreatefrompng($source) : imagecreatefromjpeg($source);
@@ -56,9 +56,9 @@ class Fichier {
         imagecopyresampled($canvas, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
         
         if ($extension === 'png') {
-            imagepng($canvas, $dest, 6); // Qualité 0-9
+            imagepng($canvas, $dest, 6); 
         } else {
-            imagejpeg($canvas, $dest, 75); // Qualité 0-100
+            imagejpeg($canvas, $dest, 75); 
         }
         
         imagedestroy($image);

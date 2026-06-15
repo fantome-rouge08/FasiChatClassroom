@@ -1,5 +1,4 @@
 <?php
-// src/Models/Apparitaire.php
 
 class Apparitaire extends Utilisateur {
     private $db;

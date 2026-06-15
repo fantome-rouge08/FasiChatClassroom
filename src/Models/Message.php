@@ -54,7 +54,6 @@ class Message {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            // On relance l'exception pour que le contrôleur puisse la capturer
             throw $e;
         }
     }
