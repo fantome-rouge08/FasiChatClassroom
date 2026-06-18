@@ -29,12 +29,16 @@ function showView(view, btn) {
 
 function selectConv(item, title, icon, bg, sub, type, id) {
     document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
+    if (item) item.classList.add('active');
     currentChatType = type;
     currentChatId = id;
     currentChatName = title;
     document.getElementById('topbarTitle').textContent = title;
     document.getElementById('topbarSub').textContent = sub;
+    const avatar = document.getElementById('topbarAvatar');
+    avatar.textContent = icon || '💬';
+    avatar.style.background = bg || 'linear-gradient(135deg,#6366f1,#4f46e5)';
+    showView('msgs', null);
     loadMessages();
 }
 

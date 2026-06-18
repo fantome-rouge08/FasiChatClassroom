@@ -1,6 +1,5 @@
 <?php
 
-// Récupère l'URL demandée
 $request = $_SERVER['REQUEST_URI'];
 
 $basePath = '/FasiChatClassroom/public';
@@ -169,27 +168,101 @@ switch ($path) {
         exit();
         break;
 
+    case 'valve-publish':
         session_start();
+        ob_clean();
+        header('Content-Type: application/json');
         if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'apparitaire') {
+            require_once __DIR__ . '/../src/Autoloader.php';
+            require_once __DIR__ . '/../database/Database.php';
             $dbInstance = new Database();
             $db = $dbInstance->getConnection();
             $apparitaire = new Apparitaire($db, $_SESSION['user']);
-            
-            if ($apparitaire->publierAnnonce($_POST['titre'], $_POST['contenu'])) {
-                header('Location: /FasiChatClassroom/public/valve?success=1');
-            } else {
-                header('Location: /FasiChatClassroom/public/valve?error=1');
+            try {
+                $success = $apparitaire->publierAnnonce($_POST['titre'], $_POST['contenu']);
+                echo json_encode(['success' => $success]);
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
         } else {
-            header('Location: /FasiChatClassroom/public/login');
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Accès refusé']);
         }
         exit();
         break;
+
+    case 'valve-delete':
+        session_start();
+        ob_clean();
+        header('Content-Type: application/json');
+        if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'apparitaire') {
+            require_once __DIR__ . '/../src/Autoloader.php';
+            require_once __DIR__ . '/../database/Database.php';
+            $dbInstance = new Database();
+            $db = $dbInstance->getConnection();
+            $apparitaire = new Apparitaire($db, $_SESSION['user']);
+            $success = $apparitaire->supprimerAnnonce(intval($_POST['id']));
+            echo json_encode(['success' => $success]);
+        } else {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Accès refusé']);
+        }
+        exit();
+        break;
+
+    case 'valve-edit':
+        session_start();
+        ob_clean();
+        header('Content-Type: application/json');
+        if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'apparitaire') {
+            require_once __DIR__ . '/../src/Autoloader.php';
+            require_once __DIR__ . '/../database/Database.php';
+            $dbInstance = new Database();
+            $db = $dbInstance->getConnection();
+            $apparitaire = new Apparitaire($db, $_SESSION['user']);
+            $success = $apparitaire->modifierAnnonce(intval($_POST['id']), $_POST['titre'], $_POST['contenu']);
+            echo json_encode(['success' => $success]);
+        } else {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Accès refusé']);
+        }
+        exit();
+        break;
+
+    case 'valve-annonces':
+        session_start();
+        ob_clean();
+        header('Content-Type: application/json');
+        if (isset($_SESSION['user'])) {
+            require_once __DIR__ . '/../src/Autoloader.php';
+            require_once __DIR__ . '/../database/Database.php';
+            $dbInstance = new Database();
+            $db = $dbInstance->getConnection();
+            $stmt = $db->query("SELECT a.*, u.nom, u.prenom, u.role FROM annonces a JOIN utilisateurs u ON a.auteur_id = u.id ORDER BY a.date_publication DESC");
+            $annonces = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($annonces);
+        } else {
+            http_response_code(403);
+            echo json_encode([]);
+        }
+        exit();
+        break;
+
     case 'valve':
 
     case 'valve.php':
         require __DIR__ . '/../views/valve.php';
         break;
+
+    case 'seed':
+        require_once __DIR__ . '/../database/Database.php';
+        $db = new Database();
+        $db->seed();
+        echo "<h3 style='color:green;font-family:sans-serif;'>✅ Base de données initialisée</h3>";
+        echo "<p><a href='/FasiChatClassroom/public/login'>→ Connexion</a></p>";
+        exit();
+
     default:
         require __DIR__ . '/../views/login.php';
         break;

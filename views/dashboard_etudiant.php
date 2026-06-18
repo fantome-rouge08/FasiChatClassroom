@@ -35,6 +35,10 @@ $autresEtudiants = $stmtEtud->fetchAll();
 // 4. Récupérer les enseignants (pour le chat public/privé)
 $stmtEns = $db->query("SELECT id, nom, prenom, role FROM utilisateurs WHERE role IN ('enseignant', 'assistant')");
 $enseignants = $stmtEns->fetchAll();
+
+// 5. Récupérer les dernières annonces du Valve
+$stmtAnn = $db->query("SELECT a.*, u.nom, u.prenom FROM annonces a JOIN utilisateurs u ON a.auteur_id = u.id ORDER BY a.date_publication DESC LIMIT 3");
+$annoncesValve = $stmtAnn->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -195,6 +199,21 @@ $enseignants = $stmtEns->fetchAll();
       </div>
     </div>
     <?php endforeach; ?>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">📣 Valve — Dernières annonces</div>
+    <?php if (empty($annoncesValve)): ?>
+      <div style="font-size:12px;color:#94a3a8;padding:8px;">Aucune annonce.</div>
+    <?php else: ?>
+      <?php foreach ($annoncesValve as $a): ?>
+      <div style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="font-size:12px;font-weight:600;color:#334155;"><?= htmlspecialchars($a['titre']) ?></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;"><?= htmlspecialchars($a['prenom'] . ' ' . $a['nom']) ?> · <?= date('d/m H:i', strtotime($a['date_publication'])) ?></div>
+      </div>
+      <?php endforeach; ?>
+      <a href="/FasiChatClassroom/public/valve" style="display:block;text-align:center;margin-top:8px;font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
+    <?php endif; ?>
   </div>
 </div>
 

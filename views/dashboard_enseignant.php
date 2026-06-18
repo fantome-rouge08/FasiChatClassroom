@@ -27,12 +27,19 @@ $collegues = $stmtColl->fetchAll();
 // Récupérer les convocations reçues
 $convocModel = new Convocation($db);
 $convocations = $convocModel->recupererToutes();
+
+// Récupérer les dernières annonces du Valve
+$stmtAnn = $db->query("SELECT a.*, u.nom, u.prenom FROM annonces a JOIN utilisateurs u ON a.auteur_id = u.id ORDER BY a.date_publication DESC LIMIT 3");
+$annoncesValve = $stmtAnn->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>FasiChat — Dashboard Enseignant</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/FasiChatClassroom/public/assets/css/dashboard_enseignant.css">
@@ -116,41 +123,33 @@ $convocations = $convocModel->recupererToutes();
   </div>
 
   <!-- Students view -->
-  <div class="students-panel visible" id="view-students">
-    <div class="panel-header">
-      <div><h2>Liste des étudiants</h2><p>Programation Web — Licence 2 Informatique · 450 inscrits</p></div>
-    </div>
-    <div class="search-students">
-      <div class="search-field">
-        <span class="s-icon">🔍</span>
-        <input type="text" placeholder="Rechercher un étudiant...">
+    <div class="students-panel visible" id="view-students">
+      <div class="panel-header">
+        <div><h2>Liste des étudiants</h2><p>Faculté des Sciences Informatiques · <?= count($etudiants) ?> inscrits</p></div>
       </div>
-      <button class="filter-btn active">Tous</button>
-      <button class="filter-btn">En ligne</button>
-      <button class="filter-btn">Hors ligne</button>
-    </div>
-    <div class="students-grid">
-      <!-- Liste statique restaurée -->
-      <div class="student-card">
-        <div class="sc-header">
-          <div class="sc-avatar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">DA</div>
-          <div><div class="sc-name">Daniel Ayivi</div></div>
+      <div class="search-students">
+        <div class="search-field">
+          <span class="s-icon">🔍</span>
+          <input type="text" placeholder="Rechercher un étudiant...">
         </div>
-        <div class="sc-actions">
-          <button class="sc-btn msg" onclick="selectConv(null, 'Daniel Ayivi','👤','linear-gradient(135deg,#3b82f6,#1d4ed8)','Étudiant','prive', 101); showView('msgs', document.querySelectorAll('.nav-tab')[2])">💬 Message</button>
-        </div>
+        <button class="filter-btn active">Tous</button>
+        <button class="filter-btn">En ligne</button>
+        <button class="filter-btn">Hors ligne</button>
       </div>
-      <div class="student-card">
-        <div class="sc-header">
-          <div class="sc-avatar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">MM</div>
-          <div><div class="sc-name">Mamadou Mbaye</div></div>
+      <div class="students-grid">
+        <?php foreach ($etudiants as $etud): ?>
+        <div class="student-card">
+          <div class="sc-header">
+            <div class="sc-avatar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"><?= strtoupper(substr($etud['prenom'],0,1).substr($etud['nom'],0,1)) ?></div>
+            <div><div class="sc-name"><?= htmlspecialchars($etud['prenom'] . ' ' . $etud['nom']) ?></div></div>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn msg" onclick="selectConv(this, '<?= htmlspecialchars($etud['prenom'].' '.$etud['nom'], ENT_QUOTES) ?>','👤','linear-gradient(135deg,#3b82f6,#1d4ed8)','Étudiant','prive', <?= $etud['id'] ?>)">💬 Message</button>
+          </div>
         </div>
-        <div class="sc-actions">
-          <button class="sc-btn msg" onclick="selectConv(null, 'Mamadou Mbaye','👤','linear-gradient(135deg,#3b82f6,#1d4ed8)','Étudiant','prive', 102); showView('msgs', document.querySelectorAll('.nav-tab')[2])">💬 Message</button>
-        </div>
+        <?php endforeach; ?>
       </div>
     </div>
-  </div>
 
   <!-- Mur pédagogique view -->
   <div class="mur-panel" id="view-mur">
@@ -186,7 +185,7 @@ $convocations = $convocModel->recupererToutes();
   <div class="chat-input-area" id="input-area" style="display:none;">
     <div class="input-row">
       <div class="msg-textarea-wrap">
-        <textarea class="msg-textarea" placeholder="Répondre..." rows="1" id="msgInput"></textarea>
+        <textarea class="msg-textarea" placeholder="Répondre..." rows="1" id="msgInput" onkeydown="handleKey(event)"></textarea>
       </div>
       <button class="attach-btn" onclick="triggerUpload()">📎</button>
       <input type="file" id="fileInput" style="display:none;" onchange="handleFileUpload(this)">
@@ -210,15 +209,36 @@ $convocations = $convocModel->recupererToutes();
   <div class="panel-section">
     <div class="panel-title">Convocations reçues</div>
     <div id="convoc-list-right">
-        <!-- Rempli dynamiquement via PHP -->
+        <?php if (empty($convocations)): ?>
+            <div style="font-size:12px;color:#94a3a8;padding:8px;">Aucune convocation.</div>
+        <?php else: ?>
+            <?php foreach ($convocations as $conv): ?>
+            <div style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;">
+                <strong><?= htmlspecialchars($conv['objet']) ?></strong><br>
+                <span style="color:#94a3b8;"><?= htmlspecialchars($conv['lieu']) ?> · <?= date('d/m H:i', strtotime($conv['date_heure'])) ?></span>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">📣 Valve — Dernières annonces</div>
+    <?php if (empty($annoncesValve)): ?>
+      <div style="font-size:12px;color:#94a3a8;padding:8px;">Aucune annonce.</div>
+    <?php else: ?>
+      <?php foreach ($annoncesValve as $a): ?>
+      <div style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="font-size:12px;font-weight:600;color:#334155;"><?= htmlspecialchars($a['titre']) ?></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;"><?= htmlspecialchars($a['prenom'] . ' ' . $a['nom']) ?> · <?= date('d/m H:i', strtotime($a['date_publication'])) ?></div>
+      </div>
+      <?php endforeach; ?>
+      <a href="/FasiChatClassroom/public/valve" style="display:block;text-align:center;margin-top:8px;font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
+    <?php endif; ?>
   </div>
 </div>
 
-<script src="/FasiChatClassroom/public/assets/js/dashboard_enseignant.js"></script>
-<script>
-    // Initialisation du chat pour l'enseignant
-    initChat(<?= $currentUser['id'] ?>, 1); // 1 est l'ID par défaut de la promo L2 FASI
-</script>
+<script src="/FasiChatClassroom/public/assets/js/dashboard_enseignant.js?t=<?= time() ?>"></script>
+<script>initChat(<?= $currentUser['id'] ?>, 1);</script>
 </body>
 </html>

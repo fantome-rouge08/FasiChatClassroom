@@ -1,0 +1,469 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Français ---
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{lmodern}
+
+% --- Mise en page ---
+\geometry{margin=2.2cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\onehalfspacing
+
+% --- Couleurs ---
+\definecolor{navy}{HTML}{1e293b}
+\definecolor{indigo}{HTML}{6366f1}
+\definecolor{emerald}{HTML}{059669}
+\definecolor{codebg}{HTML}{f1f5f9}
+\definecolor{codeborder}{HTML}{cbd5e1}
+\definecolor{comment}{HTML}{6b7280}
+\definecolor{keyword}{HTML}{4f46e5}
+\definecolor{string}{HTML}{059669}
+
+% --- Listings ---
+\lstdefinestyle{phpphp}{
+    language=PHP,
+    backgroundcolor=\color{codebg},
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    commentstyle=\color{comment}\itshape,
+    numberstyle=\tiny\color{comment},
+    numbers=left,
+    numbersep=6pt,
+    frame=single,
+    rulecolor=\color{codeborder},
+    breaklines=true,
+    xleftmargin=10pt,
+    framexleftmargin=6pt,
+    tabsize=4,
+    captionpos=b,
+}
+\lstdefinestyle{monsql}{
+    language=SQL,
+    backgroundcolor=\color{codebg},
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    commentstyle=\color{comment}\itshape,
+    numbers=left,
+    numbersep=6pt,
+    frame=single,
+    rulecolor=\color{codeborder},
+    breaklines=true,
+    xleftmargin=10pt,
+    framexleftmargin=6pt,
+    tabsize=2,
+    captionpos=b,
+}
+
+% --- En-tête ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\textcolor{comment}{FasiChat Classroom}}
+\fancyhead[R]{\small\sffamily\textcolor{comment}{Rapport de projet}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+% --- Liens ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=indigo,
+    urlcolor=indigo,
+}
+
+% --- Sections ---
+\usepackage{titlesec}
+\titleformat{\section}{\Large\sffamily\bfseries\color{navy}}{}{0em}{}[\vspace{-2pt}\rule{\textwidth}{0.4pt}]
+\titleformat{\subsection}{\large\sffamily\bfseries\color{indigo!80!black}}{}{0em}{}
+
+\begin{document}
+
+% ===== PAGE DE GARDE =====
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    {\scshape\Large UNIVERSIT\'E PROTESTANTE AU CONGO \par}
+    {\scshape\large FACULT\'E DES SCIENCES INFORMATIQUES \par}
+    {\scshape\large KINSHASA/LINGWALA \par}
+    \vspace{2cm}
+    \vspace{1cm}
+    {\scshape\Large Travail Pratique \par}
+    \vspace{1cm}
+    {\huge\bfseries FasiChatClassRoom \par}
+    \vspace{2cm}
+
+    \begin{flushleft}
+    {\Large\bfseries Mati\`ere :} PROGRAMMATION WEB PHP \\
+    \vspace{0.8cm}
+    {\Large\bfseries Con\c cu par les \'etudiants :} \\
+    {\large 1. KAGHOMA KITSIPA John} \\
+    {\large 2. KIPAKA BAKARI Michel} \\
+    {\large 3. MATHE MWERO Ben} \\
+    \vspace{0.8cm}
+    {\Large\bfseries Promotion :} L2 LMD \\
+    \end{flushleft}
+
+    \vfill
+    {\large Ann\'ee Acad\'emique : 2025-2026 \par}
+\end{titlepage}
+
+% ===== TABLE DES MATIÈRES =====
+\newpage
+\tableofcontents
+\newpage
+
+% ===== 1. INTRODUCTION =====
+\section{Introduction}
+
+FasiChat est une application web qui permet aux \'etudiants, enseignants et
+administrateurs d'une facult\'e de communiquer facilement. Le projet est n\'e
+d'un besoin simple : remplacer les groupes WhatsApp et les annonces papier par
+une plateforme unique, organis\'ee et s\'ecuris\'ee.
+
+L'application permet :
+\begin{itemize}
+    \item d'\'echanger des messages priv\'es ou publics
+    \item de publier des annonces officielles (Valve)
+    \item d'afficher un mur p\'edagogique par cours
+    \item d'envoyer des convocations aux enseignants
+    \item de partager des fichiers (PDF, images, audio, vid\'eo)
+\end{itemize}
+
+\noindent Ce rapport d\'etaille l'architecture, les fonctionnalit\'es et les
+choix techniques du projet.
+
+% ===== 2. OBJECTIFS =====
+\section{Objectifs}
+
+L'objectif principal \'etait de cr\'eer un espace de communication unique pour
+toute la facult\'e, avec des r\^oles bien d\'efinis :
+
+\begin{itemize}
+    \item \textbf{\'Etudiant :} peut discuter en groupe (promotion), voir le
+    mur des cours, envoyer des messages priv\'es aux camarades, et consulter
+    les annonces du Valve.
+    \item \textbf{Enseignant / Assistant :} peut publier sur le mur
+    p\'edagogique, discuter en public avec les \'etudiants, recevoir des
+    convocations, et envoyer des messages priv\'es aux coll\`egues.
+    \item \textbf{Doyen / Vice-Doyen :} peut convoquer des r\'eunions,
+    \'echanger des messages confidentiels, et consulter tous les espaces.
+    \item \textbf{Apparitaire :} g\`ere le tableau d'affichage (Valve) :
+    publie, modifie et supprime les annonces officielles.
+\end{itemize}
+
+% ===== 3. TECHNOLOGIES =====
+\section{Technologies utilis\'ees}
+
+Le projet utilise uniquement des technologies natives, sans framework :
+
+\begin{itemize}
+    \item \textbf{PHP 8} c\^ot\'e serveur (POO, PDO, sessions)
+    \item \textbf{MySQL} pour la base de donn\'ees
+    \item \textbf{JavaScript} (Fetch API, DOM) pour le c\^ot\'e client
+    \item \textbf{CSS3} (Flexbox, variables CSS, d\'egrad\'es)
+    \item \textbf{Apache} (mod\_rewrite pour le routage)
+    \item \textbf{HTML5} pour les templates
+\end{itemize}
+
+\noindent Le choix de ne pas utiliser de framework \'etait volontaire : cela
+permet de mieux comprendre chaque brique du projet et de montrer notre
+ma\^itrise des concepts fondamentaux.
+
+% ===== 4. ARCHITECTURE =====
+\section{Architecture du projet}
+
+\subsection{Structure MVC}
+
+Le projet suit une architecture MVC (Mod\`ele-Vue-Contr\^oleur) maison : les
+\textbf{Mod\`eles} g\`erent les donn\'ees (Utilisateur, Message, Fichier\ldots),
+les \textbf{Vues} affichent le HTML (login, dashboards, valve), et les
+\textbf{Contr\^oleurs} traitent les requ\^etes.
+
+\subsection{Front Controller}
+
+Toutes les requ\^etes passent par \texttt{public/index.php}. Le fichier
+\texttt{.htaccess} redirige les URLs vers ce fichier.
+
+\begin{lstlisting}[style=phpphp, caption=Le routeur (public/index.php)]
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$path = str_replace('/FasiChatClassroom/public', '', $path);
+$path = trim($path, '/');
+
+switch ($path) {
+    case 'login':
+        require __DIR__ . '/../views/login.php';
+        break;
+    case 'message-send':
+        $msgModel = new Message($db);
+        $success = $msgModel->envoyer(...);
+        sendJsonResponse(['success' => $success]);
+        break;
+    default:
+        require __DIR__ . '/../views/login.php';
+}
+\end{lstlisting}
+
+\subsection{Hi\'erarchie des classes utilisateur}
+
+Les utilisateurs sont repr\'esent\'es par une hi\'erarchie de classes PHP :
+la classe de base \texttt{Utilisateur} est \textbf{abstraite} (on ne peut pas
+cr\'eer un \guillemotleft~utilisateur~\guillemotright{} g\'en\'erique).
+\texttt{CadreAdministratif} ajoute la m\'ethode \texttt{convoquer()} partag\'ee
+par le Doyen et le Vice-Doyen.
+
+\begin{lstlisting}[style=phpphp, caption=Classes utilisateur]
+abstract class Utilisateur {
+    protected $id, $nom, $prenom, $email, $role;
+    public function __construct($data = []) { ... }
+    public static function authentifier($db, $email, $password) { ... }
+}
+// Heritiers : Etudiant, Enseignant (et Assistant),
+//             CadreAdministratif (abstrait),
+//               - Doyen, ViceDoyen,
+//             Apparitaire
+\end{lstlisting}
+
+% ===== 5. BASE DE DONNÉES =====
+\section{Base de donn\'ees}
+
+La base \texttt{fasichat} contient 7 tables reli\'ees par des cl\'es
+\'etrang\`eres. Voici les plus importantes :
+
+\begin{lstlisting}[style=monsql, caption=Tables principales]
+-- Utilisateurs (7 roles)
+CREATE TABLE utilisateurs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100), prenom VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    mot_de_passe VARCHAR(255), role VARCHAR(50)
+);
+
+-- Messages (type : 'prive', 'public', 'mur', 'convocation')
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    expediteur_id INT,
+    contenu TEXT,
+    date_envoi DATETIME DEFAULT CURRENT_TIMESTAMP,
+    type VARCHAR(20),
+    cours_id INT NULL, promotion_id INT NULL,
+    fichier_id INT NULL
+);
+
+-- Annonces (Valve)
+CREATE TABLE annonces (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titre VARCHAR(255), contenu TEXT,
+    date_publication DATETIME DEFAULT CURRENT_TIMESTAMP,
+    auteur_id INT
+);
+\end{lstlisting}
+
+\noindent Les messages priv\'es sont li\'es \`a un destinataire via la table
+\texttt{messages\_destinataires}. Les messages publics sont li\'es \`a une
+promotion, les messages de mur sont li\'es \`a un cours.
+
+% ===== 6. FONCTIONNALITÉS =====
+\section{Fonctionnalit\'es d\'etaill\'ees}
+
+\subsection{Messagerie en temps r\'eel}
+
+Les messages sont envoy\'es et re\c{c}us sans rechargement de page. Toutes les
+3 secondes, le navigateur demande les nouveaux messages au serveur (technique
+de \textbf{polling AJAX}).
+
+\begin{lstlisting}[style=phpphp, caption=Envoi d'un message (co^te' serveur)]
+class Message {
+    private $db;
+    public function envoyer($expediteurId, $contenu, $type,
+            $destinataireId = null, $coursId = null,
+            $promotionId = null, $fichierId = null) {
+        $this->db->beginTransaction();
+        // Insertion du message
+        $query = "INSERT INTO messages (...) VALUES (...)";
+        $stmt->execute([...]);
+        // Si prive, on lie le destinataire
+        if ($type === 'prive') {
+            $queryDest = "INSERT INTO messages_destinataires
+                         (message_id, destinataire_id) VALUES (...)";
+            $stmtDest->execute([...]);
+        }
+        $this->db->commit();
+        return true;
+    }
+}
+\end{lstlisting}
+
+\subsection{Mur p\'edagogique}
+
+Chaque cours a un mur o\`u l'enseignant publie des annonces, rappels ou
+questions. Les \'etudiants voient ces publications dans leur sidebar. Les
+messages de type \texttt{mur} sont filtr\'es par \texttt{cours\_id}.
+
+\subsection{Valve (tableau d'affichage)}
+
+Le Valve affiche toutes les annonces officielles, tri\'ees de la plus r\'ecente
+\`a la plus ancienne. Seul l'Apparitaire peut publier, mais tout le monde peut
+les consulter.
+
+\begin{lstlisting}[style=phpphp, caption=Affichage des annonces]
+$stmtAnnonces = $db->query("
+    SELECT a.*, u.nom, u.prenom, u.role
+    FROM annonces a
+    JOIN utilisateurs u ON a.auteur_id = u.id
+    ORDER BY a.date_publication DESC
+");
+$annonces = $stmtAnnonces->fetchAll();
+\end{lstlisting}
+
+\subsection{Convocations}
+
+Le Doyen et le Vice-Doyen peuvent convoquer les enseignants. Le syst\`eme
+cr\'ee un message de type \texttt{convocation} et une entr\'ee dans la table
+\texttt{convocations} (objet, date, lieu).
+
+\subsection{Upload de fichiers}
+
+Le t\'el\'eversement se fait en deux \'etapes : (1) l'utilisateur
+s\'electionne un fichier, le JavaScript l'envoie au serveur qui le stocke avec
+un nom unique ; (2) le \texttt{fichier\_id} est joint au message lors de
+l'envoi. Les images sont compress\'ees \`a 800px de largeur pour \'economiser
+de l'espace.
+
+\begin{lstlisting}[style=phpphp, caption=Upload se'curise' de fichier]
+public function upload($fileArray) {
+    $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    $safeName = uniqid('file_', true) . '.' . $extension;
+    $destPath = __DIR__ . '/../../public/assets/uploads/' . $safeName;
+
+    if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+        $this->compressImage($fileArray['tmp_name'], $destPath, $ext);
+    } else {
+        move_uploaded_file($fileArray['tmp_name'], $destPath);
+    }
+    // Enregistrement en base...
+    return $this->db->lastInsertId();
+}
+\end{lstlisting}
+
+% ===== 7. SÉCURITÉ =====
+\section{S\'ecurit\'e}
+
+\begin{itemize}
+    \item \textbf{Mots de passe :} hach\'es avec \texttt{password\_hash()}
+    (bcrypt). V\'erification avec \texttt{password\_verify()}.
+    \item \textbf{Injections SQL :} toutes les requ\^etes utilisent des
+    requ\^etes pr\'epar\'ees PDO avec param\`etres nomm\'es.
+    \item \textbf{XSS :} les donn\'ees affich\'ees sont \'echapp\'ees avec
+    \texttt{htmlspecialchars()} c\^ot\'e PHP et \texttt{escapeHTML()} c\^ot\'e
+    JavaScript.
+    \item \textbf{Fichiers :} noms randomis\'es avec \texttt{uniqid()} pour
+    \'eviter le path traversal.
+    \item \textbf{Session :} chaque page v\'erifie la session et le r\^ole
+    de l'utilisateur avant d'afficher le contenu.
+\end{itemize}
+
+% ===== 8. PROBLÈMES =====
+\section{Probl\`emes rencontr\'es}
+
+\subsection{Chemin d'upload incorrect}
+
+\textbf{Probl\`eme :} les fichiers \'etaient stock\'es dans
+\texttt{src/public/assets/uploads/} au lieu de
+\texttt{public/assets/uploads/}. La constante \texttt{\_\_DIR\_\_} pointant
+vers \texttt{src/Models/}, un seul \texttt{/../} remontait seulement \`a
+\texttt{src/}.
+
+\textbf{Solution :} utiliser \texttt{/../../} au lieu de \texttt{/../}.
+
+\begin{lstlisting}[style=phpphp]
+// Avant (faux)
+$destPath = __DIR__ . '/../' . $uploadDir . $safeName;
+// Apres (corrige)
+$destPath = __DIR__ . '/../../' . $uploadDir . $safeName;
+\end{lstlisting}
+
+\subsection{Erreur de constructeur Doyen/Vice-Doyen}
+
+\textbf{Probl\`eme :} \texttt{new Doyen(\$db, \$\_SESSION['user'])} passait
+l'objet PDO comme donn\'ees utilisateur. Le constructeur
+\texttt{Doyen(\$data)} interpr\'etait \texttt{\$db} comme \$data, ce qui
+provoquait une erreur.
+
+\textbf{Solution :} \texttt{new Doyen(\$\_SESSION['user'])} (un seul
+param\`etre).
+
+\subsection{Message avec fichier mais sans texte}
+
+\textbf{Probl\`eme :} la validation exigeait un texte non vide. Si
+l'utilisateur joignait un fichier sans \'ecrire de message, l'envoi \'echouait.
+
+\textbf{Solution :} autoriser l'envoi quand un fichier est pr\'esent.
+
+\begin{lstlisting}[style=phpphp]
+// Avant
+if (empty(trim($contenu))) { throw new Exception(...); }
+// Apres
+if (empty(trim($contenu)) && empty($fichierId)) { throw new Exception(...); }
+\end{lstlisting}
+
+\subsection{Mauvais type de messages}
+
+\textbf{Probl\`eme :} les messages \'etudiant-enseignant \'etaient en
+\texttt{type='prive'} au lieu de \texttt{type='public'}. Ils n'\'etaient
+visibles que par deux personnes au lieu de toute la promotion.
+
+\textbf{Solution :} modifier les appels JavaScript pour utiliser
+\texttt{'public'} avec l'ID de la promotion.
+
+\subsection{Absence de v\'erification d'auth}
+
+\textbf{Probl\`eme :} les pages \texttt{dashboard\_apparitaire.php} et
+\texttt{dashboard\_admin.php} n'avaient aucune v\'erification de session.
+
+\textbf{Solution :} ajouter \texttt{session\_start()} et une redirection si
+l'utilisateur n'est pas connect\'e.
+
+% ===== 9. CONCLUSION =====
+\section{Conclusion}
+
+\subsection{Ce qui fonctionne}
+
+Le projet r\'epond aux objectifs fix\'es :
+\begin{itemize}
+    \item messagerie temps r\'eel entre tous les acteurs
+    \item distinction claire entre messages priv\'es, publics et de mur
+    \item Valve (annonces) g\'er\'e par l'Apparitaire
+    \item convocations pour les enseignants
+    \item upload et compression de fichiers
+    \item interface adapt\'ee \`a chaque r\^ole
+    \item protection contre les injections SQL et XSS
+\end{itemize}
+
+\subsection{Pistes d'am\'elioration}
+
+Quelques pistes pour aller plus loin :
+\begin{itemize}
+    \item remplacer le polling par des WebSockets (latence r\'eduite)
+    \item ajouter des notifications (email ou push)
+    \item interface mobile responsive d\'edi\'ee
+    \item syst\`eme de \guillemotleft~lu~\guillemotright{} pour les messages
+    \item administration des utilisateurs (CRUD)
+\end{itemize}
+
+\vspace{1cm}
+\begin{center}
+\rule{0.4\textwidth}{0.3pt}\par
+\small\sffamily\textcolor{comment}{Fin du rapport}
+\end{center}
+
+\end{document}

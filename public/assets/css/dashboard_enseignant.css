@@ -68,7 +68,8 @@ body{font-family:'Sora',sans-serif;background:var(--navy);height:100vh;overflow:
 .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 
 /* STUDENTS PANEL */
-.students-panel{flex:1;overflow-y:auto;background:var(--chat-bg);padding:24px 28px;}
+.students-panel{flex:1;overflow-y:auto;background:var(--chat-bg);padding:24px 28px;display:none;}
+.students-panel.visible{display:block;}
 .students-panel::-webkit-scrollbar{width:4px;}
 .students-panel::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:2px;}
 .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}

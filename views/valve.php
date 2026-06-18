@@ -1,3 +1,28 @@
+<?php
+session_start();
+require_once __DIR__ . '/../src/Autoloader.php';
+require_once __DIR__ . '/../database/Database.php';
+$dbInstance = new Database();
+$db = $dbInstance->getConnection();
+
+// Récupérer les annonces depuis la DB
+$stmt = $db->query("SELECT a.*, u.nom, u.prenom, u.role FROM annonces a JOIN utilisateurs u ON a.auteur_id = u.id ORDER BY a.date_publication DESC");
+$annonces = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$totalAnnonces = count($annonces);
+
+// Récupérer l'utilisateur connecté
+$currentUser = $_SESSION['user'] ?? null;
+$estApparitaire = $currentUser && $currentUser['role'] === 'apparitaire';
+$prenomNom = $currentUser ? htmlspecialchars($currentUser['prenom'] . ' ' . $currentUser['nom']) : 'Invité';
+$roleLabel = $currentUser ? htmlspecialchars(ucfirst($currentUser['role'])) : 'Visiteur';
+
+// Déterminer la route du dashboard selon le rôle
+function dashboardRoute($role) {
+    $map = ['etudiant' => 'dashboard_etudiant', 'enseignant' => 'dashboard_enseignant', 'assistant' => 'dashboard_enseignant', 'doyen' => 'dashboard_admin', 'vice-doyen' => 'dashboard_vicedoyen', 'apparitaire' => 'dashboard_apparitaire'];
+    return $map[$role] ?? 'login';
+}
+$dashRoute = $currentUser ? '/FasiChatClassroom/public/' . dashboardRoute($currentUser['role']) : '/FasiChatClassroom/public/login';
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,7 +30,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FasiChat — Valve Faculté</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/valve.css">
+<link rel="stylesheet" href="/FasiChatClassroom/public/assets/css/valve.css">
 </head>
 <body>
 
@@ -16,41 +41,19 @@
     <div class="brand-info"><h3>FasiChat</h3><span>Valve — Tableau d'affichage</span></div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab" onclick="location.href='dashboard_etudiant.html'">💬 Chat</button>
+    <button class="nav-tab" onclick="location.href='<?= $dashRoute ?>'">💬 Dashboard</button>
     <button class="nav-tab active">📣 Valve</button>
-    <button class="nav-tab" onclick="location.href='dashboard_admin.html'">🏛 Admin</button>
   </div>
   <div class="sidebar-cats">
     <div class="section-label">Catégories</div>
     <div class="cat-item active">
       <div class="cat-icon" style="background:rgba(79,163,224,0.15);">📋</div>
-      <div class="cat-info"><div class="cat-name">Toutes les annonces</div><div class="cat-count">6 publications</div></div>
-    </div>
-    <div class="cat-item">
-      <div class="cat-icon" style="background:rgba(239,68,68,0.12);">🚨</div>
-      <div class="cat-info"><div class="cat-name">Urgences</div><div class="cat-count">1 publication</div></div>
-      <div class="cat-badge">1</div>
-    </div>
-    <div class="cat-item">
-      <div class="cat-icon" style="background:rgba(245,158,11,0.12);">📅</div>
-      <div class="cat-info"><div class="cat-name">Convocations</div><div class="cat-count">2 publications</div></div>
-    </div>
-    <div class="cat-item">
-      <div class="cat-icon" style="background:rgba(34,197,94,0.12);">📢</div>
-      <div class="cat-info"><div class="cat-name">Informations</div><div class="cat-count">2 publications</div></div>
-    </div>
-    <div class="cat-item">
-      <div class="cat-icon" style="background:rgba(99,102,241,0.12);">🎓</div>
-      <div class="cat-info"><div class="cat-name">Académique</div><div class="cat-count">1 publication</div></div>
+      <div class="cat-info"><div class="cat-name">Toutes les annonces</div><div class="cat-count"><?= $totalAnnonces ?> publication<?= $totalAnnonces > 1 ? 's' : '' ?></div></div>
     </div>
     <div class="section-label" style="margin-top:10px;">Navigation rapide</div>
-    <div class="cat-item" onclick="location.href='dashboard_etudiant.html'">
+    <div class="cat-item" onclick="location.href='<?= $dashRoute ?>'">
       <div class="cat-icon" style="background:rgba(79,163,224,0.1);">🎓</div>
-      <div class="cat-info"><div class="cat-name">Mon espace étudiant</div><div class="cat-count">Retour au chat</div></div>
-    </div>
-    <div class="cat-item" onclick="location.href='dashboard_enseignant.html'">
-      <div class="cat-icon" style="background:rgba(245,158,11,0.1);">👨‍🏫</div>
-      <div class="cat-info"><div class="cat-name">Espace enseignant</div><div class="cat-count">Voir le mur péda.</div></div>
+      <div class="cat-info"><div class="cat-name">Mon espace</div><div class="cat-count">Retour au dashboard</div></div>
     </div>
   </div>
   <div class="sidebar-profile">
@@ -58,10 +61,10 @@
       <div class="online-dot"></div>🗂
     </div>
     <div class="profile-info">
-      <h4>DJ. ROLLY</h4>
-      <span style="color:#a5b4fc;font-size:10px;">Apparitaire · Faculté</span>
+      <h4><?= $prenomNom ?></h4>
+      <span style="color:#a5b4fc;font-size:10px;"><?= $roleLabel ?> · Faculté</span>
     </div>
-    <a href="login.html" class="icon-btn">🚪</a>
+    <a href="/FasiChatClassroom/public/login" class="icon-btn">🚪</a>
   </div>
 </div>
 
@@ -76,7 +79,9 @@
     </div>
     <div class="valve-topbar-actions">
       <button class="vt-btn ghost">📊 Statistiques</button>
+      <?php if ($estApparitaire): ?>
       <button class="vt-btn primary" onclick="openModal()">+ Nouvelle annonce</button>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -103,9 +108,7 @@
         <h2>Bienvenue sur le Valve 📣</h2>
         <p>Toutes les annonces officielles de la Faculté des Sciences Informatiques. Consultez régulièrement cet espace pour rester informé des actualités, convocations et événements importants.</p>
         <div class="hero-stats">
-          <div class="hero-stat"><div class="n">6</div><div class="l">ANNONCES</div></div>
-          <div class="hero-stat"><div class="n">1</div><div class="l">URGENCE</div></div>
-          <div class="hero-stat"><div class="n">2</div><div class="l">CONVOCATIONS</div></div>
+          <div class="hero-stat"><div class="n"><?= $totalAnnonces ?></div><div class="l">ANNONCES</div></div>
         </div>
       </div>
     </div>
@@ -113,152 +116,39 @@
     <!-- Annonces grid -->
     <div class="annonces-grid">
 
-      <!-- URGENT -->
-      <div class="annonce-card urgent" style="grid-column:1/-1;">
-        <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(239,68,68,0.12);">🚨</div>
-          <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#ef4444;">URGENT</div>
-            <div class="ac-title">Modification du calendrier des examens — Semestre 5</div>
-          </div>
-          <div class="ac-priority" style="background:rgba(239,68,68,0.1);color:#ef4444;">⚠</div>
-        </div>
-        <div class="ac-body">
-          <div class="ac-text">Suite à des contraintes organisationnelles, le calendrier des examens de rattrapage a été modifié. Les épreuves de <strong>Programmation Web</strong> et de <strong>Mathematique pour informaticien</strong> sont reportées au <strong>lundi 27 juillet 2026</strong>. Veuillez consulter le fichier joint pour le nouveau calendrier complet.</div>
-          <div class="ac-file">
-            <span style="font-size:20px;">📄</span>
-            <span>Nouveau_Calendrier_Examens_S5.pdf</span>
-            <small>1.2 Mo</small>
-          </div>
-          <div class="ac-footer">
-            <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">MS</div>
-              <div><div class="ac-author-name">DJ. ROLLY · Apparitaire</div></div>
-            </div>
-            <div class="ac-date">Aujourd'hui · 07:30</div>
-          </div>
-        </div>
+      <?php if (empty($annonces)): ?>
+      <div class="annonce-card" style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;">
+        <p>Aucune annonce pour le moment.</p>
       </div>
-
-      <!-- CONVOCATION DOYEN -->
-      <div class="annonce-card convocation">
-        <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(245,158,11,0.12);">🏛</div>
-          <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#d97706;">CONVOCATION</div>
-            <div class="ac-title">Réunion du Conseil Pédagogique — Vendredi 24 Juin</div>
-          </div>
-        </div>
-        <div class="ac-body">
-          <div class="ac-text">Le Doyen de la Faculté convoque l'ensemble des enseignants et assistants à une réunion du Conseil Pédagogique. <strong>Présence obligatoire.</strong> Ordre du jour : bilan du semestre 5 et modalités des examens.</div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">📅 Ven. 24 Jan 2025</div>
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">🕐 14h00 – 16h00</div>
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">📍 Salle A-12</div>
-          </div>
-          <div class="ac-footer">
-            <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#dc2626,#991b1b);">D</div>
-              <div><div class="ac-author-name">Le Doyen</div></div>
-            </div>
-            <div class="ac-date">Hier · 16:00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CONVOCATION VICE-DOYEN -->
-      <div class="annonce-card convocation">
-        <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(245,158,11,0.12);">📋</div>
-          <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#d97706;">CONVOCATION</div>
-            <div class="ac-title">Réunion Commission de Recherche — Lundi 27 Jan</div>
-          </div>
-        </div>
-        <div class="ac-body">
-          <div class="ac-text">Le Vice-Doyen convoque les enseignants-chercheurs pour une réunion de la Commission de Recherche. Veuillez préparer un bilan de vos activités de recherche du semestre.</div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">📅 Lun. 27 Jan 2025</div>
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">🕐 10h00</div>
-            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#92400e;font-weight:600;">📍 Salle de Conf. B</div>
-          </div>
-          <div class="ac-footer">
-            <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">VD</div>
-              <div><div class="ac-author-name">Le Vice-Doyen</div></div>
-            </div>
-            <div class="ac-date">Hier · 09:15</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- INFO -->
+      <?php else: ?>
+        <?php foreach ($annonces as $a): ?>
       <div class="annonce-card">
         <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(34,197,94,0.12);">📢</div>
+          <div class="ac-cat-icon" style="background:rgba(99,102,241,0.12);">📢</div>
           <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#16a34a;">INFORMATION</div>
-            <div class="ac-title">Dépôt des projets — Plateforme en ligne</div>
+            <div class="ac-cat-label" style="color:#6366f1;">ANNONCE</div>
+            <div class="ac-title"><?= htmlspecialchars($a['titre']) ?></div>
           </div>
         </div>
         <div class="ac-body">
-          <div class="ac-text">Le dépôt des projets de fin d'année s'effectuera exclusivement via la plateforme en ligne de la faculté. Aucun envoi par email ne sera accepté. Date limite : <strong>vendredi 30 juin 2026 à 23h59</strong>.</div>
+          <div class="ac-text"><?= nl2br(htmlspecialchars($a['contenu'])) ?></div>
           <div class="ac-footer">
             <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">MS</div>
-              <div><div class="ac-author-name">DJ. ROLLY · Apparitaire</div></div>
+              <div class="ac-author-ava" style="background:linear-gradient(135deg,#6366f1,#4f46e5);"><?= strtoupper(substr($a['prenom'],0,1).substr($a['nom'],0,1)) ?></div>
+              <div><div class="ac-author-name"><?= htmlspecialchars($a['prenom'] . ' ' . $a['nom']) ?> · <?= htmlspecialchars(ucfirst($a['role'])) ?></div></div>
             </div>
-            <div class="ac-date">20 mai · 10:00</div>
+            <div class="ac-date"><?= date('d M · H:i', strtotime($a['date_publication'])) ?></div>
           </div>
         </div>
       </div>
-
-      <!-- ACADEMIQUE -->
-      <div class="annonce-card">
-        <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(99,102,241,0.12);">🎓</div>
-          <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#6366f1;">ACADÉMIQUE</div>
-            <div class="ac-title">Résultats du Semestre 2 disponibles</div>
-          </div>
-        </div>
-        <div class="ac-body">
-          <div class="ac-text">Les résultats du semestre 2 sont désormais disponibles sur le portail étudiant. Les étudiants ayant des réclamations disposent de <strong>5 jours ouvrables</strong> pour contacter la scolarité.</div>
-          <div class="ac-footer">
-            <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">MS</div>
-              <div><div class="ac-author-name">DJ. ROLLY · Apparitaire</div></div>
-            </div>
-            <div class="ac-date">18 Juin · 14:30</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- INFO 2 -->
-      <div class="annonce-card">
-        <div class="ac-header">
-          <div class="ac-cat-icon" style="background:rgba(34,197,94,0.12);">🏗</div>
-          <div class="ac-meta">
-            <div class="ac-cat-label" style="color:#16a34a;">INFORMATION</div>
-            <div class="ac-title">Fermeture de la bibliothèque — Travaux</div>
-          </div>
-        </div>
-        <div class="ac-body">
-          <div class="ac-text">La salle de machine sera fermée du <strong>22 au 24 juillet 2025</strong> pour travaux de rénovation.</div>
-          <div class="ac-footer">
-            <div class="ac-author">
-              <div class="ac-author-ava" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">MS</div>
-              <div><div class="ac-author-name">DJ. ROLLY · Apparitaire</div></div>
-            </div>
-            <div class="ac-date">17 Jan · 08:00</div>
-          </div>
-        </div>
-      </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
 
     </div>
   </div>
 </div>
 
+<?php if ($estApparitaire): ?>
 <!-- COMPOSE MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
   <div class="modal">
@@ -273,31 +163,11 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Titre de l'annonce *</label>
-        <input type="text" class="form-input" placeholder="Ex: Réunion du conseil pédagogique...">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Catégorie *</label>
-          <select class="form-select">
-            <option value="">Choisir une catégorie</option>
-            <option value="urgent">🚨 Urgent</option>
-            <option value="convocation">📅 Convocation</option>
-            <option value="info">📢 Information</option>
-            <option value="academique">🎓 Académique</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Date d'expiration</label>
-          <input type="date" class="form-input">
-        </div>
+        <input type="text" class="form-input" id="vTitre" placeholder="Ex: Réunion du conseil pédagogique...">
       </div>
       <div class="form-group">
         <label class="form-label">Contenu de l'annonce *</label>
-        <textarea class="form-textarea" placeholder="Rédigez le contenu de votre annonce ici..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Pièce jointe (optionnel)</label>
-        <input type="file" class="form-input" accept=".pdf,.doc,.docx">
+        <textarea class="form-textarea" id="vContenu" placeholder="Rédigez le contenu de votre annonce ici..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -306,7 +176,34 @@
     </div>
   </div>
 </div>
+<?php endif; ?>
 
-<script src="/FasiChatClassroom/public/assets/js/valve.js"></script>
+<script>
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+<?php if ($estApparitaire): ?>
+function publishAnnonce() {
+  const titre = document.getElementById('vTitre').value.trim();
+  const contenu = document.getElementById('vContenu').value.trim();
+  if (!titre || !contenu) { alert('Veuillez remplir le titre et le contenu.'); return; }
+  const fd = new FormData();
+  fd.append('titre', titre);
+  fd.append('contenu', contenu);
+  fetch('/FasiChatClassroom/public/valve-publish', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        alert('Annonce publiée avec succès !');
+        closeModal();
+        document.getElementById('vTitre').value = '';
+        document.getElementById('vContenu').value = '';
+        location.reload();
+      } else { alert('Erreur : ' + (d.error || 'Inconnue')); }
+    })
+    .catch(() => alert('Erreur réseau'));
+}
+<?php endif; ?>
+</script>
 </body>
 </html>

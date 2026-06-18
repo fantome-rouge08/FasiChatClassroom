@@ -1,3 +1,20 @@
+<?php
+session_start();
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'apparitaire') {
+    header('Location: /FasiChatClassroom/public/login');
+    exit();
+}
+$currentUser = $_SESSION['user'];
+require_once __DIR__ . '/../src/Autoloader.php';
+require_once __DIR__ . '/../database/Database.php';
+$dbInstance = new Database();
+$db = $dbInstance->getConnection();
+
+// Récupérer les annonces depuis la DB
+$stmt = $db->query("SELECT a.*, u.nom, u.prenom, u.role FROM annonces a JOIN utilisateurs u ON a.auteur_id = u.id ORDER BY a.date_publication DESC");
+$annonces = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$totalAnnonces = count($annonces);
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,7 +22,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FasiChat — Apparitaire</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/dashboard_apparitaire.css">
+<link rel="stylesheet" href="/FasiChatClassroom/public/assets/css/dashboard_apparitaire.css">
 </head>
 <body>
 <div class="sidebar">
@@ -23,14 +40,14 @@
   </div>
   <div class="nav-section">
     <div class="nav-label-section">Navigation</div>
-    <div class="nav-item" onclick="location.href='valve.html'"><div class="nav-icon" style="background:rgba(99,102,241,0.08);">📣</div><div><div class="nl">Voir le Valve public</div><div class="ns">Vue utilisateur</div></div></div>
-    <div class="nav-item" onclick="location.href='dashboard_admin.html'"><div class="nav-icon" style="background:rgba(220,38,38,0.08);">🏛</div><div><div class="nl">Espace Doyen</div><div class="ns">Administration</div></div></div>
-    <div class="nav-item" onclick="location.href='dashboard_etudiant.html'"><div class="nav-icon" style="background:rgba(79,163,224,0.08);">🎓</div><div><div class="nl">Vue Étudiant</div><div class="ns">Dashboard étudiant</div></div></div>
+    <div class="nav-item" onclick="location.href='/FasiChatClassroom/public/valve'"><div class="nav-icon" style="background:rgba(99,102,241,0.08);">📣</div><div><div class="nl">Voir le Valve public</div><div class="ns">Vue utilisateur</div></div></div>
+    <div class="nav-item" onclick="location.href='/FasiChatClassroom/public/dashboard_admin'"><div class="nav-icon" style="background:rgba(220,38,38,0.08);">🏛</div><div><div class="nl">Espace Doyen</div><div class="ns">Administration</div></div></div>
+    <div class="nav-item" onclick="location.href='/FasiChatClassroom/public/dashboard_etudiant'"><div class="nav-icon" style="background:rgba(79,163,224,0.08);">🎓</div><div><div class="nl">Vue Étudiant</div><div class="ns">Dashboard étudiant</div></div></div>
   </div>
   <div class="sidebar-bottom">
     <div class="profile-ava"><div class="online-dot"></div>🗂</div>
-    <div class="pi"><h4>DJ. ROLLY</h4><span>Apparitaire · Faculté</span></div>
-    <a href="login.html" class="logout-btn">🚪</a>
+    <div class="pi"><h4><?= htmlspecialchars($currentUser['prenom'] . ' ' . $currentUser['nom']) ?></h4><span>Apparitaire · Faculté</span></div>
+    <a href="/FasiChatClassroom/public/login" class="logout-btn">🚪</a>
   </div>
 </div>
 
@@ -41,17 +58,14 @@
       <div class="topbar-sub">Faculté des Sciences Informatiques · Tableau d'affichage officiel</div>
     </div>
     <div class="topbar-right">
-      <button class="tb-btn ghost" onclick="location.href='valve.html'">👁 Voir le Valve</button>
+      <button class="tb-btn ghost" onclick="location.href='/FasiChatClassroom/public/valve'">👁 Voir le Valve</button>
       <button class="tb-btn primary" onclick="openModal()">➕ Nouvelle annonce</button>
     </div>
   </div>
 
   <div class="content">
     <div class="stats-row">
-      <div class="stat-card sc-indigo"><div class="si">📣</div><div class="sn">6</div><div class="sl">Annonces actives</div><div class="st">Sur le Valve public</div></div>
-      <div class="stat-card sc-red"><div class="si">🚨</div><div class="sn">1</div><div class="sl">Urgence active</div><div class="st">Priorité maximale</div></div>
-      <div class="stat-card sc-gold"><div class="si">📅</div><div class="sn">2</div><div class="sl">Convocations publiées</div><div class="st">Doyen &amp; Vice-Doyen</div></div>
-      <div class="stat-card sc-green"><div class="si">👁</div><div class="sn">342</div><div class="sl">Vues aujourd'hui</div><div class="st">Toutes annonces</div></div>
+      <div class="stat-card sc-indigo"><div class="si">📣</div><div class="sn"><?= $totalAnnonces ?></div><div class="sl">Annonces actives</div><div class="st">Sur le Valve public</div></div>
     </div>
 
     <div class="main-grid">
@@ -64,35 +78,13 @@
             <span style="font-size:10px;font-weight:700;background:rgba(99,102,241,0.1);color:var(--indigo);border:1px solid rgba(99,102,241,0.2);padding:3px 10px;border-radius:20px;letter-spacing:0.5px;">APPARITAIRE UNIQUEMENT</span>
           </div>
           <div class="compose-area">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Titre de l'annonce *</label>
-                <input type="text" class="form-input" id="compTitle" placeholder="Ex: Modification calendrier...">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Catégorie *</label>
-                <select class="form-select" id="compCat">
-                  <option value="">Choisir...</option>
-                  <option>🚨 Urgent</option>
-                  <option>📅 Convocation</option>
-                  <option>📢 Information</option>
-                  <option>🎓 Académique</option>
-                </select>
-              </div>
+            <div class="form-group">
+              <label class="form-label">Titre de l'annonce *</label>
+              <input type="text" class="form-input" id="compTitle" placeholder="Ex: Modification calendrier...">
             </div>
             <div class="form-group">
               <label class="form-label">Contenu *</label>
               <textarea class="form-textarea" id="compContent" placeholder="Rédigez le contenu de l'annonce..."></textarea>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Date d'expiration</label>
-                <input type="date" class="form-input">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Pièce jointe</label>
-                <input type="file" class="form-input" accept=".pdf,.doc,.docx">
-              </div>
             </div>
             <button class="pub-btn" onclick="publishAnnonce()">📣 Publier sur le Valve</button>
           </div>
@@ -101,95 +93,31 @@
         <!-- ANNONCES LIST -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">📋 Annonces publiées (6)</div>
-            <button class="card-action" onclick="location.href='valve.html'">Voir le Valve public →</button>
+            <div class="card-title">📋 Annonces publiées (<?= $totalAnnonces ?>)</div>
+            <button class="card-action" onclick="location.href='/FasiChatClassroom/public/valve'">Voir le Valve public →</button>
           </div>
           <div class="annonces-list" id="annoncesList">
-            <div class="annonce-item">
-              <div class="ai-cat" style="background:rgba(239,68,68,0.1);">🚨</div>
+            <?php if (empty($annonces)): ?>
+            <div style="padding:20px;text-align:center;color:#9ca3af;">Aucune annonce publiée.</div>
+            <?php else: ?>
+              <?php foreach ($annonces as $a): ?>
+            <div class="annonce-item" data-id="<?= $a['id'] ?>">
+              <div class="ai-cat" style="background:rgba(99,102,241,0.1);">📢</div>
               <div class="ai-body">
-                <div class="ai-cat-tag" style="color:#ef4444;">URGENT</div>
-                <div class="ai-title">Modification du calendrier des examens S5</div>
-                <div class="ai-preview">Les épreuves de POO et Base de Données sont reportées au lundi 27 janvier 2025...</div>
+                <div class="ai-title"><?= htmlspecialchars($a['titre']) ?></div>
+                <div class="ai-preview"><?= htmlspecialchars(substr($a['contenu'], 0, 100)) ?>...</div>
                 <div class="ai-meta">
-                  <span class="status-pill urgent-pill">● Urgence</span>
-                  <span>Aujourd'hui 07:30</span>
-                  <span>👁 87 vues</span>
+                  <span><?= date('d M · H:i', strtotime($a['date_publication'])) ?></span>
+                  <span>Par <?= htmlspecialchars($a['prenom'] . ' ' . $a['nom']) ?></span>
                 </div>
               </div>
               <div class="ai-actions">
-                <button class="ai-btn edit" onclick="openEditModal('Modification du calendrier des examens S5')">✏</button>
-                <button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button>
+                <button class="ai-btn edit" onclick="openEditModal(<?= $a['id'] ?>, '<?= htmlspecialchars($a['titre'], ENT_QUOTES) ?>', '<?= htmlspecialchars($a['contenu'], ENT_QUOTES) ?>')">✏</button>
+                <button class="ai-btn del" onclick="deleteAnnonce(<?= $a['id'] ?>, this)">🗑</button>
               </div>
             </div>
-            <div class="annonce-item">
-              <div class="ai-cat" style="background:rgba(245,158,11,0.1);">🏛</div>
-              <div class="ai-body">
-                <div class="ai-cat-tag" style="color:#d97706;">CONVOCATION</div>
-                <div class="ai-title">Réunion Conseil Pédagogique — Vendredi 24 Jan</div>
-                <div class="ai-preview">Convoquée par le Doyen · Présence obligatoire pour tous les enseignants...</div>
-                <div class="ai-meta">
-                  <span class="status-pill convoc-pill">📅 Convocation</span>
-                  <span>Hier 16:00</span>
-                  <span>👁 124 vues</span>
-                </div>
-              </div>
-              <div class="ai-actions">
-                <button class="ai-btn edit">✏</button>
-                <button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button>
-              </div>
-            </div>
-            <div class="annonce-item">
-              <div class="ai-cat" style="background:rgba(245,158,11,0.1);">📋</div>
-              <div class="ai-body">
-                <div class="ai-cat-tag" style="color:#d97706;">CONVOCATION</div>
-                <div class="ai-title">Réunion Commission de Recherche — Lundi 27 Jan</div>
-                <div class="ai-preview">Convoquée par le Vice-Doyen · Enseignants-chercheurs concernés...</div>
-                <div class="ai-meta">
-                  <span class="status-pill convoc-pill">📅 Convocation</span>
-                  <span>Hier 09:15</span>
-                  <span>👁 68 vues</span>
-                </div>
-              </div>
-              <div class="ai-actions">
-                <button class="ai-btn edit">✏</button>
-                <button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button>
-              </div>
-            </div>
-            <div class="annonce-item">
-              <div class="ai-cat" style="background:rgba(34,197,94,0.1);">📢</div>
-              <div class="ai-body">
-                <div class="ai-cat-tag" style="color:#16a34a;">INFORMATION</div>
-                <div class="ai-title">Dépôt des projets — Plateforme en ligne</div>
-                <div class="ai-preview">Date limite vendredi 31 janvier 2025 à 23h59...</div>
-                <div class="ai-meta">
-                  <span class="status-pill active-pill">● Actif</span>
-                  <span>20 Jan</span>
-                  <span>👁 203 vues</span>
-                </div>
-              </div>
-              <div class="ai-actions">
-                <button class="ai-btn edit">✏</button>
-                <button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button>
-              </div>
-            </div>
-            <div class="annonce-item">
-              <div class="ai-cat" style="background:rgba(99,102,241,0.1);">🎓</div>
-              <div class="ai-body">
-                <div class="ai-cat-tag" style="color:#6366f1;">ACADÉMIQUE</div>
-                <div class="ai-title">Résultats du Semestre 4 disponibles</div>
-                <div class="ai-preview">Disponibles sur le portail étudiant · 5 jours pour réclamations...</div>
-                <div class="ai-meta">
-                  <span class="status-pill active-pill">● Actif</span>
-                  <span>18 Jan</span>
-                  <span>👁 312 vues</span>
-                </div>
-              </div>
-              <div class="ai-actions">
-                <button class="ai-btn edit">✏</button>
-                <button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button>
-              </div>
-            </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -198,25 +126,9 @@
       <div class="right-col">
         <div class="stat-small">
           <div class="stat-small-title">📊 Statistiques Valve</div>
-          <div class="bar-item">
-            <div class="bar-label">Urgences <span>1 / 6</span></div>
-            <div class="bar-track"><div class="bar-fill" style="width:17%;background:linear-gradient(90deg,#ef4444,#dc2626);"></div></div>
-          </div>
-          <div class="bar-item">
-            <div class="bar-label">Convocations <span>2 / 6</span></div>
-            <div class="bar-track"><div class="bar-fill" style="width:33%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div>
-          </div>
-          <div class="bar-item">
-            <div class="bar-label">Informations <span>2 / 6</span></div>
-            <div class="bar-track"><div class="bar-fill" style="width:33%;background:linear-gradient(90deg,#22c55e,#16a34a);"></div></div>
-          </div>
-          <div class="bar-item">
-            <div class="bar-label">Académique <span>1 / 6</span></div>
-            <div class="bar-track"><div class="bar-fill" style="width:17%;background:linear-gradient(90deg,var(--indigo),#4f46e5);"></div></div>
-          </div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100);">
-            <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;">Vues totales aujourd'hui</div>
-            <div style="font-size:28px;font-weight:700;color:var(--indigo);">342 <span style="font-size:13px;color:var(--gray-400);font-weight:400;">utilisateurs</span></div>
+          <div style="margin-top:16px;padding-top:14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;">Total annonces</div>
+            <div style="font-size:28px;font-weight:700;color:var(--indigo);"><?= $totalAnnonces ?> <span style="font-size:13px;color:var(--gray-400);font-weight:400;">publications</span></div>
           </div>
         </div>
 
@@ -250,7 +162,7 @@
           <div class="card-header"><div class="card-title">⚡ Actions rapides</div></div>
           <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
             <button onclick="openModal()" style="width:100%;padding:10px 14px;background:linear-gradient(135deg,var(--indigo),#4f46e5);color:white;border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;">➕ Nouvelle annonce</button>
-            <button onclick="location.href='valve.html'" style="width:100%;padding:10px 14px;background:var(--gray-100);color:var(--navy);border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">👁 Prévisualiser le Valve</button>
+            <button onclick="location.href='/FasiChatClassroom/public/valve'" style="width:100%;padding:10px 14px;background:var(--gray-100);color:var(--navy);border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">👁 Prévisualiser le Valve</button>
             <button style="width:100%;padding:10px 14px;background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.2);border-radius:10px;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" onclick="alert('Annonce urgente en cours de création...');openModal();">🚨 Publier une urgence</button>
           </div>
         </div>
@@ -269,12 +181,7 @@
     </div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Titre *</label><input type="text" class="form-input" id="mTitle" placeholder="Titre de l'annonce..."></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Catégorie *</label><select class="form-select" id="mCat"><option>🚨 Urgent</option><option>📅 Convocation</option><option selected>📢 Information</option><option>🎓 Académique</option></select></div>
-        <div class="form-group"><label class="form-label">Expiration</label><input type="date" class="form-input"></div>
-      </div>
       <div class="form-group"><label class="form-label">Contenu *</label><textarea class="form-textarea" id="mContent" placeholder="Contenu de l'annonce..."></textarea></div>
-      <div class="form-group"><label class="form-label">Pièce jointe</label><input type="file" class="form-input" accept=".pdf,.doc,.docx"></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
@@ -292,8 +199,8 @@
       <button class="modal-close" onclick="closeEditModal()">✕</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="eId" value="">
       <div class="form-group"><label class="form-label">Titre *</label><input type="text" class="form-input" id="eTitle"></div>
-      <div class="form-group"><label class="form-label">Catégorie</label><select class="form-select"><option>🚨 Urgent</option><option>📅 Convocation</option><option>📢 Information</option><option>🎓 Académique</option></select></div>
       <div class="form-group"><label class="form-label">Contenu *</label><textarea class="form-textarea" id="eContent" style="min-height:100px;"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -305,66 +212,90 @@
 
 <script>
 function setNav(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}
+
 function openModal(){document.getElementById('modal').classList.add('open');}
 function closeModal(){document.getElementById('modal').classList.remove('open');}
 function closeOut(e){if(e.target.id==='modal')closeModal();}
-function openEditModal(title){
-  document.getElementById('eTitle').value=title;
-  document.getElementById('eContent').value='Contenu de l\'annonce à modifier...';
+
+function openEditModal(id, titre, contenu){
+  document.getElementById('eId').value = id;
+  document.getElementById('eTitle').value = titre;
+  document.getElementById('eContent').value = contenu;
   document.getElementById('editModal').classList.add('open');
 }
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');}
 function closeEditOut(e){if(e.target.id==='editModal')closeEditModal();}
-function saveEdit(){closeEditModal();alert('Annonce modifiée avec succès !');}
-function publishFromModal(){
-  const t=document.getElementById('mTitle').value.trim();
-  const c=document.getElementById('mContent').value.trim();
-  if(!t||!c){alert('Veuillez remplir le titre et le contenu.');return;}
-  const cat=document.getElementById('mCat').value;
-  addAnnonce(t,c,cat);
-  closeModal();
-  document.getElementById('mTitle').value='';
-  document.getElementById('mContent').value='';
-}
+
 function publishAnnonce(){
-  const t=document.getElementById('compTitle').value.trim();
-  const c=document.getElementById('compContent').value.trim();
-  if(!t||!c){alert('Veuillez remplir le titre et le contenu.');return;}
-  
-  // Création d'un formulaire dynamique pour envoyer les données au serveur
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = '/FasiChatClassroom/public/valve-publish';
-  
-  const inputTitre = document.createElement('input');
-  inputTitre.name = 'titre';
-  inputTitre.value = t;
-  form.appendChild(inputTitre);
-  
-  const inputContenu = document.createElement('input');
-  inputContenu.name = 'contenu';
-  inputContenu.value = c;
-  form.appendChild(inputContenu);
-  
-  document.body.appendChild(form);
-  form.submit();
+  const t = document.getElementById('compTitle').value.trim();
+  const c = document.getElementById('compContent').value.trim();
+  if (!t || !c) { alert('Veuillez remplir le titre et le contenu.'); return; }
+  const fd = new FormData();
+  fd.append('titre', t);
+  fd.append('contenu', c);
+  fetch('/FasiChatClassroom/public/valve-publish', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) { alert('Annonce publiée !'); location.reload(); }
+      else { alert('Erreur : ' + (d.error || 'Inconnue')); }
+    })
+    .catch(() => alert('Erreur réseau'));
 }
-function addAnnonce(title,content,cat){
-  const list=document.getElementById('annoncesList');
-  const now=new Date();
-  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  const item=document.createElement('div');
-  item.className='annonce-item';
-  item.innerHTML=`<div class="ai-cat" style="background:rgba(99,102,241,0.1);">📢</div><div class="ai-body"><div class="ai-cat-tag" style="color:var(--indigo);">NOUVELLE</div><div class="ai-title">${title.replace(/</g,'&lt;')}</div><div class="ai-preview">${content.replace(/</g,'&lt;').substring(0,80)}...</div><div class="ai-meta"><span class="status-pill active-pill">● Actif</span><span>Aujourd'hui ${time}</span><span>👁 0 vues</span></div></div><div class="ai-actions"><button class="ai-btn edit">✏</button><button class="ai-btn del" onclick="deleteAnnonce(this)">🗑</button></div>`;
-  list.insertBefore(item,list.firstChild);
-  alert('Annonce publiée avec succès sur le Valve !');
+
+function publishFromModal(){
+  const t = document.getElementById('mTitle').value.trim();
+  const c = document.getElementById('mContent').value.trim();
+  if (!t || !c) { alert('Veuillez remplir le titre et le contenu.'); return; }
+  const fd = new FormData();
+  fd.append('titre', t);
+  fd.append('contenu', c);
+  fetch('/FasiChatClassroom/public/valve-publish', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        alert('Annonce publiée !');
+        closeModal();
+        document.getElementById('mTitle').value = '';
+        document.getElementById('mContent').value = '';
+        location.reload();
+      } else { alert('Erreur : ' + (d.error || 'Inconnue')); }
+    })
+    .catch(() => alert('Erreur réseau'));
 }
-function deleteAnnonce(btn){
-  if(confirm('Supprimer cette annonce du Valve ?')){
-    btn.closest('.annonce-item').style.animation='fadeOut 0.3s ease forwards';
-    setTimeout(()=>btn.closest('.annonce-item').remove(),300);
-  }
+
+function saveEdit(){
+  const id = document.getElementById('eId').value;
+  const t = document.getElementById('eTitle').value.trim();
+  const c = document.getElementById('eContent').value.trim();
+  if (!t || !c) { alert('Veuillez remplir le titre et le contenu.'); return; }
+  const fd = new FormData();
+  fd.append('id', id);
+  fd.append('titre', t);
+  fd.append('contenu', c);
+  fetch('/FasiChatClassroom/public/valve-edit', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) { alert('Annonce modifiée !'); closeEditModal(); location.reload(); }
+      else { alert('Erreur : ' + (d.error || 'Inconnue')); }
+    })
+    .catch(() => alert('Erreur réseau'));
 }
+
+function deleteAnnonce(id, btn){
+  if (!confirm('Supprimer cette annonce du Valve ?')) return;
+  const fd = new FormData();
+  fd.append('id', id);
+  fetch('/FasiChatClassroom/public/valve-delete', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        btn.closest('.annonce-item').style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => btn.closest('.annonce-item').remove(), 300);
+      } else { alert('Erreur : ' + (d.error || 'Inconnue')); }
+    })
+    .catch(() => alert('Erreur réseau'));
+}
+
 const style=document.createElement('style');
 style.textContent='@keyframes fadeOut{to{opacity:0;transform:translateX(20px);}}';
 document.head.appendChild(style);
